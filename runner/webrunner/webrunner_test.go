@@ -3,6 +3,7 @@ package webrunner
 
 import (
 	"context"
+	"errors"
 	"io"
 	"testing"
 	"time"
@@ -64,11 +65,12 @@ func TestScrapeJobMarksOKBeforeClosingMate(t *testing.T) {
 }
 
 type fakeMate struct {
-	onClose func()
+	onClose  func()
+	startErr error
 }
 
 func (m fakeMate) Start(context.Context, ...scrapemate.IJob) error {
-	return nil
+	return m.startErr
 }
 
 func (m fakeMate) Close() error {
@@ -153,4 +155,52 @@ func (r *memoryJobRepo) Count(_ context.Context, params web.SelectParams) (int, 
 func (r *memoryJobRepo) Update(_ context.Context, job *web.Job) error {
 	r.jobs[job.ID] = *job
 	return nil
+}
+
+func TestScrapeJobErrorsLeaveFailedStatus(t *testing.T) {
+	t.Parallel()
+
+	failure := errors.New("browser failed")
+	for _, stage := range []string{"output", "setup", "scrape"} {
+		t.Run(stage, func(t *testing.T) {
+			t.Parallel()
+
+			repo := &memoryJobRepo{}
+			svc := web.NewService(repo, t.TempDir())
+			job := web.Job{
+				ID: "failed-job", Name: "coffee", Date: time.Now().UTC(), Status: web.StatusPending,
+				Data: web.JobData{
+					Keywords: []string{"coffee"}, Lang: "en", Depth: 1,
+					FastMode: true, Lat: "1", Lon: "2", Zoom: 15, MaxTime: time.Minute,
+				},
+			}
+			if err := svc.Create(context.Background(), &job); err != nil {
+				t.Fatal(err)
+			}
+			folder := t.TempDir()
+			if stage == "output" {
+				folder += "/missing/directory"
+			}
+			worker := &webrunner{
+				svc: svc,
+				cfg: &runner.Config{DataFolder: folder},
+				setupMate: func(context.Context, io.Writer, *web.Job) (mateRunner, error) {
+					if stage == "setup" {
+						return nil, failure
+					}
+					return fakeMate{startErr: failure}, nil
+				},
+			}
+			if err := worker.scrapeJob(context.Background(), &job); err == nil {
+				t.Fatal("expected scrape error")
+			}
+			got, err := svc.Get(context.Background(), job.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Status != web.StatusFailed {
+				t.Fatalf("status = %q, want failed after %s error", got.Status, stage)
+			}
+		})
+	}
 }

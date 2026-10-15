@@ -1,51 +1,44 @@
-<tbody id="job-tbody" hx-get="/jobs?page={{.CurrentPage}}" hx-trigger="every 10s" hx-swap="outerHTML">
+<tbody id="job-tbody" hx-get="/jobs?page={{.CurrentPage}}" hx-trigger="every 3s" hx-swap="outerHTML">
 {{range .Jobs}}
 <tr>
-    <td>{{.ID}}</td>
-    <td>{{.Name}}</td>
-    <td>{{.Date}}</td>
+    <td><div class="job-name">{{.Name}}</div><div class="job-id" title="{{.ID}}">{{.ID}}</div><time class="job-created" datetime="{{.Date.Format "2006-01-02T15:04:05Z07:00"}}">{{.Date.Format "02 Jan · 15:04"}} UTC</time></td>
+    <td class="date-cell"><time datetime="{{.Date.Format "2006-01-02T15:04:05Z07:00"}}">{{.Date.Format "02 Jan 2006 · 15:04"}} UTC</time></td>
     <td>
-        <span class="status-indicator status-{{.Status}}">{{.Status}}</span>
+        <span class="status-indicator status-{{.Status}}">
+            {{if eq .Status "working"}}<span class="spinner" aria-hidden="true"></span>Scraping
+            {{else if eq .Status "pending"}}<span class="queue-dot" aria-hidden="true"></span>Queued
+            {{else if eq .Status "ok"}}<svg class="icon"><use href="#icon-check"/></svg>Completed
+            {{else if eq .Status "failed"}}<span aria-hidden="true">!</span>Failed
+            {{else}}{{.Status}}{{end}}
+        </span>
+        {{if eq .Status "working"}}<span class="status-hint">Collecting businesses…</span>{{else if eq .Status "pending"}}<span class="status-hint">Waiting for a worker</span>{{else if eq .Status "failed"}}<span class="status-hint">Check server logs for details</span>{{end}}
     </td>
-    <td>
-        {{ if eq .Status "ok" }}
-            <button type="button" class="button view-button"
-                    hx-get="/view?id={{.ID}}"
-                    hx-target="#map-modal-container"
-                    hx-swap="innerHTML">View</button>
-            <a href="/download?id={{.ID}}" download class="button download-button">Download</a>
-        {{ end }}
-        <button hx-delete="/delete?id={{.ID}}&page={{$.CurrentPage}}"
-                hx-target="#job-tbody"
-                hx-swap="outerHTML"
-                hx-confirm="Are you sure you want to delete this job?"
-                class="delete-button">Delete</button>
-    </td>
+    <td><div class="row-actions">
+        {{if eq .Status "ok"}}
+            <button type="button" class="button view-button" hx-get="/view?id={{.ID}}" hx-target="#map-modal-container" hx-swap="innerHTML" aria-label="View results for {{.Name}}">View</button>
+            <a href="/download?id={{.ID}}" download class="button download-button" aria-label="Download CSV for {{.Name}}"><svg class="icon"><use href="#icon-download"/></svg>CSV</a>
+        {{end}}
+        {{if or (eq .Status "pending") (eq .Status "working")}}
+            <span class="action-placeholder">Results when ready</span>
+        {{else}}
+            <button type="button" hx-delete="/delete?id={{.ID}}&page={{$.CurrentPage}}" hx-target="#job-tbody" hx-swap="outerHTML" hx-confirm="Delete this search and its results? This cannot be undone." class="delete-button" aria-label="Delete {{.Name}}" title="Delete search"><svg class="icon"><use href="#icon-trash"/></svg></button>
+        {{end}}
+    </div></td>
 </tr>
-{{end}}
-{{if eq (len .Jobs) 0}}
-<tr>
-    <td colspan="5" style="text-align: center; padding: 1rem;">0 results</td>
-</tr>
+{{else}}
+<tr><td colspan="4"><div class="empty-state"><span class="empty-illustration" aria-hidden="true"><span></span><svg class="icon"><use href="#icon-pin"/></svg></span><h3>Your next discovery starts here</h3><p>Create your first search to find businesses.<br>You'll see its progress and results right here.</p><span class="empty-caption">← START WITH A SEARCH</span></div></td></tr>
 {{end}}
 </tbody>
-
 <div id="pagination-container" hx-swap-oob="true">
-    {{if .HasPages}}
-    <div class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem;">
-        {{if .HasPrev}}
-        <button class="button" hx-get="/jobs?page={{.PrevPage}}" hx-target="#job-tbody" hx-swap="outerHTML">Previous</button>
-        {{else}}
-        <button class="button" disabled style="opacity: 0.5; cursor: not-allowed;">Previous</button>
-        {{end}}
-        <span class="page-info">Page {{.CurrentPage}} of {{.TotalPages}}</span>
-        {{if .HasNext}}
-        <button class="button" hx-get="/jobs?page={{.NextPage}}" hx-target="#job-tbody" hx-swap="outerHTML">Next</button>
-        {{else}}
-        <button class="button" disabled style="opacity: 0.5; cursor: not-allowed;">Next</button>
-        {{end}}
-    </div>
-    {{else}}
-    <div style="display: none;"></div>
-    {{end}}
+    {{if .HasPages}}<div class="pagination"><button type="button" class="button" {{if .HasPrev}}hx-get="/jobs?page={{.PrevPage}}" hx-target="#job-tbody" hx-swap="outerHTML"{{else}}disabled{{end}}>← Previous</button><span>Page {{.CurrentPage}} of {{.TotalPages}}</span><button type="button" class="button" {{if .HasNext}}hx-get="/jobs?page={{.NextPage}}" hx-target="#job-tbody" hx-swap="outerHTML"{{else}}disabled{{end}}>Next →</button></div>{{end}}
+</div>
+<strong id="metric-total" hx-swap-oob="true">{{.Total}}</strong>
+<strong id="metric-working" hx-swap-oob="true">{{.Summary.Working}}</strong>
+<strong id="metric-pending" hx-swap-oob="true">{{.Summary.Pending}}</strong>
+<strong id="metric-completed" hx-swap-oob="true">{{.Summary.Completed}}</strong>
+<span id="jobs-count" class="count-badge" hx-swap-oob="true">{{.Total}}</span>
+<div id="activity-panel" class="activity-panel {{if .Summary.Working}}running{{else if .Summary.Pending}}queued{{else}}idle{{end}}" hx-swap-oob="true" role="status">
+    <span class="activity-visual" aria-hidden="true">{{if .Summary.Working}}<span class="radar-ring"></span>{{end}}<svg class="icon"><use href="{{if .Summary.Working}}#icon-search{{else if .Summary.Pending}}#icon-clock{{else}}#icon-check{{end}}"/></svg></span>
+    <div>{{if .Summary.Working}}<strong>Discovery in progress</strong><p>{{.Summary.Working}} running{{if .Summary.Pending}} · {{.Summary.Pending}} queued{{end}}. Collecting business details. This can take a few minutes.</p>{{else if .Summary.Pending}}<strong>Your search is in the queue</strong><p>{{.Summary.Pending}} waiting to start. This panel will update when a worker picks it up.</p>{{else if .Summary.Failed}}<strong>No searches running · {{.Summary.Failed}} failed</strong><p>Review the failed searches below. Completed results are ready to download.</p>{{else if .Total}}<strong>You're all caught up</strong><p>Your searches have finished. View the results or download a CSV below.</p>{{else}}<strong>Ready when you are</strong><p>Start a search. We'll keep you updated from queue to completion.</p>{{end}}</div>
+    {{if .Summary.Working}}<span class="activity-live"><span></span>IN PROGRESS</span>{{end}}
 </div>

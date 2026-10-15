@@ -3,159 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Maps Scraper</title>
+    <meta name="theme-color" content="#152c2b">
+    <meta name="htmx-config" content='{"useTemplateFragments":true}'>
+    <title>Maps Scraper · Workspace</title>
     <link rel="stylesheet" href="/static/css/main.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.6/htmx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.6/htmx.min.js" defer></script>
+    <script src="/static/js/app.js" defer></script>
 </head>
 <body>
-    <div class="app-container">
-        <header>
-            <h1>Google Maps Scraper</h1>
-            <nav>
-                <a href="/api/docs" target="_blank" rel="noopener noreferrer">API Documentation</a>
-            </nav>
-            <div class="github-section">
-                <p>If you find this tool useful, please consider starring our repository: </p>
-                <a href="https://github.com/gosom/google-maps-scraper" class="github-button">
-                <svg height="16" width="16" viewBox="0 0 16 16">
-                    <path fill="currentColor" d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25z"/>
-                  </svg>
-                  Star on GitHub
-                </a>
+    <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="icon-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+        <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+        <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 20"/></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+        <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></symbol>
+    </svg>
+    <div class="workspace">
+        <aside class="navigation" aria-label="Workspace navigation">
+            <a class="brand" href="/" aria-label="Maps Scraper home"><span class="brand-mark"><svg class="icon"><use href="#icon-pin"/></svg></span><span>maps<span class="brand-light">scraper</span><small>BUSINESS DISCOVERY</small></span></a>
+            <div class="nav-label">WORKSPACE</div>
+            <a class="nav-item active" href="/" aria-current="page"><svg class="icon"><use href="#icon-grid"/></svg>Overview<span class="nav-dot"></span></a>
+            <a class="nav-item" href="/api/docs" target="_blank" rel="noopener noreferrer"><svg class="icon"><use href="#icon-code"/></svg>API documentation<span class="external-arrow">↗</span></a>
+            <div class="nav-bottom">
+                <div class="workspace-note"><span class="small-orbit" aria-hidden="true"></span><strong>Your discovery workspace</strong><p>Find local businesses.<br>Turn searches into useful data.</p></div>
+                <a href="https://github.com/gosom/google-maps-scraper" target="_blank" rel="noopener noreferrer">Open source on GitHub <span>↗</span></a>
+                <a href="https://github.com/sponsors/gosom" target="_blank" rel="noopener noreferrer">Support the project <span>↗</span></a>
             </div>
-            <div id="sponsor-section" class="sponsor-section">
-    <button class="sponsor-close" onclick="hideSponsor()">
-        ×
-    </button>
-    <p class="sponsor-text">Support the ongoing maintenance and development of this project by becoming a sponsor. Your contribution helps ensure the tool's continued improvement and reliability.</p>
-    <a href="https://github.com/sponsors/gosom" class="sponsor-button" target="_blank" rel="noopener noreferrer">
-        <svg height="16" width="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M4.25 2.5C4.25 1.83696 4.67143 1.25 5.25 1.25C5.82857 1.25 6.25 1.83696 6.25 2.5C6.25 3.16304 5.82857 3.75 5.25 3.75C4.67143 3.75 4.25 3.16304 4.25 2.5ZM2.5 3.75C1.92143 3.75 1.5 3.16304 1.5 2.5C1.5 1.83696 1.92143 1.25 2.5 1.25C3.07857 1.25 3.5 1.83696 3.5 2.5C3.5 3.16304 3.07857 3.75 2.5 3.75ZM8 1.25C7.42143 1.25 7 1.83696 7 2.5C7 3.16304 7.42143 3.75 8 3.75C8.57857 3.75 9 3.16304 9 2.5C9 1.83696 8.57857 1.25 8 1.25ZM10.75 2.5C10.75 1.83696 11.1714 1.25 11.75 1.25C12.3286 1.25 12.75 1.83696 12.75 2.5C12.75 3.16304 12.3286 3.75 11.75 3.75C11.1714 3.75 10.75 3.16304 10.75 2.5ZM14.5 1.25C13.9214 1.25 13.5 1.83696 13.5 2.5C13.5 3.16304 13.9214 3.75 14.5 3.75C15.0786 3.75 15.5 3.16304 15.5 2.5C15.5 1.83696 15.0786 1.25 14.5 1.25ZM1.25 5.25C1.25 4.67143 1.83696 4.25 2.5 4.25C3.16304 4.25 3.75 4.67143 3.75 5.25C3.75 5.82857 3.16304 6.25 2.5 6.25C1.83696 6.25 1.25 5.82857 1.25 5.25ZM5.25 4.25C4.67143 4.25 4.25 4.67143 4.25 5.25C4.25 5.82857 4.67143 6.25 5.25 6.25C5.82857 6.25 6.25 5.82857 6.25 5.25C6.25 4.67143 5.82857 4.25 5.25 4.25ZM7 5.25C7 4.67143 7.42143 4.25 8 4.25C8.57857 4.25 9 4.67143 9 5.25C9 5.82857 8.57857 6.25 8 6.25C7.42143 6.25 7 5.82857 7 5.25ZM11.75 4.25C11.1714 4.25 10.75 4.67143 10.75 5.25C10.75 5.82857 11.1714 6.25 11.75 6.25C12.3286 6.25 12.75 5.82857 12.75 5.25C12.75 4.67143 12.3286 4.25 11.75 4.25ZM13.5 5.25C13.5 4.67143 13.9214 4.25 14.5 4.25C15.0786 4.25 15.5 4.67143 15.5 5.25C15.5 5.82857 15.0786 6.25 14.5 6.25C13.9214 6.25 13.5 5.82857 13.5 5.25ZM2.5 7.25C1.83696 7.25 1.25 7.67143 1.25 8.25C1.25 8.82857 1.83696 9.25 2.5 9.25C3.16304 9.25 3.75 8.82857 3.75 8.25C3.75 7.67143 3.16304 7.25 2.5 7.25ZM4.25 8.25C4.25 7.67143 4.67143 7.25 5.25 7.25C5.82857 7.25 6.25 7.67143 6.25 8.25C6.25 8.82857 5.82857 9.25 5.25 9.25C4.67143 9.25 4.25 8.82857 4.25 8.25ZM8 7.25C7.42143 7.25 7 7.67143 7 8.25C7 8.82857 7.42143 9.25 8 9.25C8.57857 9.25 9 8.82857 9 8.25C9 7.67143 8.57857 7.25 8 7.25ZM10.75 8.25C10.75 7.67143 11.1714 7.25 11.75 7.25C12.3286 7.25 12.75 7.67143 12.75 8.25C12.75 8.82857 12.3286 9.25 11.75 9.25C11.1714 9.25 10.75 8.82857 10.75 8.25ZM14.5 7.25C13.9214 7.25 13.5 7.67143 13.5 8.25C13.5 8.82857 13.9214 9.25 14.5 9.25C15.0786 9.25 15.5 8.82857 15.5 8.25C15.5 7.67143 15.0786 7.25 14.5 7.25Z" fill="currentColor"/>
-        </svg>
-        Sponsor on GitHub
-    </a>
-</div>
-
-        </header>
-        <main>
-            <div class="sidebar">
-                <div id="error-container" class="error-message"></div>
-                <form 
-                    hx-post="/scrape" 
-                    hx-target="#job-tbody"
-                    hx-swap="outerHTML"
-                    hx-indicator="#spinner"
-                    hx-on::before-request="document.getElementById('error-container').innerHTML = ''"
-                    hx-on::after-request="if(!event.detail.successful) document.getElementById('error-container').innerHTML = event.detail.xhr.responseText"
-                >
-                    
-                    <fieldset>
-                        <legend>Job Details</legend>
-                        <div class="form-group">
-                            <label for="name">Job Name:</label>
-                            <input type="text" id="name" name="name" value="{{.Name}}">
+        </aside>
+        <main class="main-content">
+            <header class="topbar"><span>Workspace <span class="breadcrumb-divider">/</span> <strong>Overview</strong></span><span class="workspace-tag"><span></span>Self-hosted workspace</span></header>
+            <div class="page-content">
+                <section class="page-heading"><div><div class="eyebrow">DISCOVER. COLLECT. CONNECT.</div><h1>A clearer view of local business.</h1><p>Create a search, follow its progress, and take your next leads with you.</p></div><span class="heading-icon" aria-hidden="true"><svg class="icon"><use href="#icon-pin"/></svg></span></section>
+                <section class="metrics" aria-label="Workspace statistics">
+                    <div class="metric"><span class="metric-icon"><svg class="icon"><use href="#icon-grid"/></svg></span><div><span class="metric-label">Total searches</span><strong id="metric-total">—</strong></div></div>
+                    <div class="metric"><span class="metric-icon teal"><svg class="icon"><use href="#icon-search"/></svg></span><div><span class="metric-label">Running</span><strong id="metric-working">—</strong></div></div>
+                    <div class="metric"><span class="metric-icon amber"><svg class="icon"><use href="#icon-clock"/></svg></span><div><span class="metric-label">In queue</span><strong id="metric-pending">—</strong></div></div>
+                    <div class="metric"><span class="metric-icon green"><svg class="icon"><use href="#icon-check"/></svg></span><div><span class="metric-label">Completed</span><strong id="metric-completed">—</strong></div></div>
+                </section>
+                <div class="work-grid">
+                    <section class="search-panel panel" aria-labelledby="new-search-title">
+                        <div class="panel-heading"><span class="section-number">01</span><div><h2 id="new-search-title">New search</h2><p>Tell us what you're looking for.</p></div></div>
+                        <form id="scrape-form" method="post" action="/scrape" hx-post="/scrape" hx-target="#job-tbody" hx-swap="outerHTML" hx-indicator="#submit-spinner" hx-sync="this:drop">
+                            <div id="error-container" class="error-message" role="alert" tabindex="-1"></div>
+                            <div class="form-group"><label for="name">Search name <span class="required">*</span></label><input type="text" id="name" name="name" value="{{.Name}}" placeholder="e.g. Istanbul coffee shops" required maxlength="200" autocomplete="off"></div>
+                            <div class="form-group"><label for="keywords">What do you want to find? <span class="required">*</span></label><textarea id="keywords" name="keywords" rows="4" placeholder="Coffee shops in Kadıköy, Istanbul&#10;Bakeries in Beşiktaş, Istanbul" required aria-describedby="keywords-help">{{.KeywordsString}}</textarea><div class="field-help" id="keywords-help">One search per line. Include a city or area for better results.</div></div>
+                            <div class="form-group"><label for="lang">Results language</label><input type="text" id="lang" name="lang" value="{{.Language}}" required minlength="2" maxlength="2" pattern="[a-zA-Z]{2}" list="languages" aria-describedby="language-help"><datalist id="languages"><option value="en">English</option><option value="tr">Turkish</option><option value="de">German</option><option value="fr">French</option><option value="es">Spanish</option></datalist><div class="field-help" id="language-help">Two-letter code, such as en or tr.</div></div>
+                            <div class="settings-group">
+                                <details><summary><svg class="icon"><use href="#icon-pin"/></svg>Location settings<span class="summary-chevron">⌄</span></summary><div class="details-content"><p class="field-help">Optional coordinates to focus your search. Use keywords for city-based searches.</p><div class="field-pair"><div class="form-group"><label for="latitude">Latitude</label><input type="number" step="any" min="-90" max="90" id="latitude" name="latitude" value="{{.Lat}}"></div><div class="form-group"><label for="longitude">Longitude</label><input type="number" step="any" min="-180" max="180" id="longitude" name="longitude" value="{{.Lon}}"></div></div><div class="form-group"><label for="zoom">Map zoom</label><input type="number" id="zoom" name="zoom" min="0" max="21" required value="{{.Zoom}}"></div></div></details>
+                                <details><summary><svg class="icon"><use href="#icon-grid"/></svg>Advanced options<span class="summary-chevron">⌄</span></summary><div class="details-content"><label class="checkbox-row" for="email"><span><strong>Find email addresses</strong><small>Visit business websites. Takes longer.</small></span><input type="checkbox" id="email" name="email" {{if .Email}}checked{{end}}></label><label class="checkbox-row" for="fastmode"><span><strong>Fast mode <span class="beta">BETA</span></strong><small>Requires location coordinates.</small></span><input type="checkbox" id="fastmode" name="fastmode" {{if .FastMode}}checked{{end}}></label><div class="field-pair"><div class="form-group"><label for="radius">Radius (meters)</label><input type="number" id="radius" name="radius" min="1" required value="{{.Radius}}"></div><div class="form-group"><label for="depth">Scroll depth</label><input type="number" id="depth" name="depth" min="1" required value="{{.Depth}}"></div></div><div class="form-group"><label for="maxtime">Maximum runtime</label><input type="text" id="maxtime" name="maxtime" value="{{.MaxTime}}" required aria-describedby="runtime-help"><div class="field-help" id="runtime-help">For example, 10m or 1h. Minimum 3 minutes.</div></div></div></details>
+                                <details><summary><svg class="icon"><use href="#icon-code"/></svg>Proxy settings<span class="summary-chevron">⌄</span></summary><div class="details-content"><div class="form-group"><label for="proxies">Proxies</label><textarea id="proxies" name="proxies" rows="3" placeholder="http://user:password@host:port" autocomplete="off" spellcheck="false" aria-describedby="proxy-help">{{.ProxiesString}}</textarea><div class="field-help" id="proxy-help">One per line. Supports HTTP, HTTPS, and SOCKS5.</div></div></div></details>
+                            </div>
+                            <button class="primary-button" id="start-search" type="submit"><span id="submit-spinner" class="spinner htmx-indicator" aria-hidden="true"></span><span id="submit-label">Start search</span><svg class="icon submit-arrow"><use href="#icon-arrow"/></svg></button>
+                            <p class="form-note"><svg class="icon"><use href="#icon-clock"/></svg>Searches can take a few minutes. Follow progress here.</p>
+                        </form>
+                    </section>
+                    <section class="results-panel" aria-labelledby="searches-title">
+                        <div id="activity-panel" class="activity-panel idle" role="status"><span class="activity-visual"><svg class="icon"><use href="#icon-search"/></svg></span><div><strong>Getting your workspace ready</strong><p>Checking the latest search activity…</p></div></div>
+                        <div class="panel jobs-panel">
+                            <div class="panel-heading jobs-heading"><div class="jobs-title"><span class="section-number">02</span><div><h2 id="searches-title">Your searches <span id="jobs-count" class="count-badge">—</span></h2><p>From first search to your next opportunity.</p></div></div><span id="sync-status" class="sync-status" role="status"><span class="sync-dot"></span><span id="sync-label">Connecting</span></span></div>
+                            <div id="connection-error" class="connection-error" role="alert" hidden>Could not refresh search status. Retrying automatically; the last known state is shown.</div>
+                            <div id="action-error" class="error-message action-error" role="alert"></div>
+                            <div class="table-scroll"><table id="job-table"><thead><tr><th scope="col">Search</th><th scope="col">Created</th><th scope="col">Status</th><th scope="col" class="actions-heading">Actions</th></tr></thead><tbody id="job-tbody" hx-get="/jobs" hx-trigger="load" hx-swap="outerHTML"><tr><td colspan="4"><div class="empty-state"><span class="spinner"></span><h3>Loading searches</h3><p>Your workspace will appear in a moment.</p></div></td></tr></tbody></table></div>
+                            <div id="pagination-container"></div>
+                            <div class="table-footer"><span><span class="subtle-dot"></span> Status refreshes automatically every 3 seconds</span><span>CSV export</span></div>
                         </div>
-                        <div class="form-group">
-                            <label for="keywords">Keywords:</label>
-                            <textarea id="keywords" name="keywords" rows="10">{{ .KeywordsString }}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="lang">Language:</label>
-                            <input type="text" id="lang" name="lang" value="{{.Language}}">
-                        </div>
-                    </fieldset>
-                    
-                    <details class="expandable-section">
-                        <summary>Location Settings</summary>
-                        <fieldset>
-                            <div class="form-group">
-                                <label for="zoom">Zoom:</label>
-                                <input type="number" id="zoom" name="zoom" value="{{.Zoom}}">
-                            </div>
-                            <div class="form-group">
-                                <label for="latitude">Latitude:</label>
-                                <input type="number" step="0.000000000000001" id="latitude" name="latitude" value="{{.Lat}}">
-                            </div>
-                            <div class="form-group">
-                                <label for="longitude">Longitude:</label>
-                                <input type="number" step="0.000000000000001" id="longitude" name="longitude" value="{{.Lon}}">
-                            </div>
-                        </fieldset>
-                    </details>
-                    
-                    <details class="expandable-section">
-                        <summary>Advanced Options</summary>
-                        <fieldset>
-                            <div class="form-group">
-                                <label for="fastmode">Fast Mode (BETA):</label>
-                                <input type="checkbox" id="fastmode" name="fastmode" {{if .FastMode}}checked{{end}}>
-                            </div>
-                            <div class="form-group">
-                                    <label for="radius">Radius (BETA):</label>
-                                    <input type="number" id="radius" name="radius" value="{{.Radius}}">
-                            </div>
-                            <div class="form-group">
-                                <label for="depth">Depth:</label>
-                                <input type="number" step="1" id="depth" name="depth" value="{{.Depth}}">
-                            </div>
-                            <div class="form-group checkbox">
-                                <input type="checkbox" id="email" name="email" {{if .Email}}checked{{end}}>
-                                <label for="email">Fetch Emails</label>
-                            </div>
-                            <div class="form-group">
-                                <label for="maxtime">Max job time:</label>
-                                <input type="text" id="maxtime" name="maxtime" value="{{.MaxTime}}">
-                            </div>
-                        </fieldset>
-                    </details>
-                    <details class="expandable-section">
-                        <summary>Proxies</summary>
-                        <fieldset>
-                            <div class="form-group">
-                                <label for="proxies">Proxies:(one per line)</label>
-                                <p class="text-muted"><small>Examples:<br>
-                                        <p>HTTPS proxy with username/password: https://username:password@myproxy.local:443<p>
-                                        <p>HTTP proxy with username/password: http://username:password@myproxy.local:443<p>
-                                        <p>SOCKS5 proxy without auth: socks5://127.0.0.1:8000</p>
-                                </p>
-
-                                <textarea id="proxies" name="proxies" rows="5">{{.ProxiesString}}</textarea>
-                            </div>
-                        </fieldset>
-                    </details>
-                    
-                    <button type="submit">Start Scraping</button>
-                </form>
-            </div>
-            <div class="content">
-                <div id="spinner" class="spinner"></div>
-                <table id="job-table">
-                    <thead>
-                        <tr>
-                            <th>Job ID</th>
-                            <th>Job Name</th>
-                            <th>Job Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="job-tbody" hx-get="/jobs" hx-trigger="load" hx-swap="outerHTML">
-                        <!-- Job rows will be inserted here by HTMX -->
-                    </tbody>
-                </table>
-                <div id="pagination-container"></div>
+                        <div class="tip"><span class="tip-mark">↗</span><div><strong>A little detail goes a long way.</strong><p>Try “dentists in Berlin” instead of “dentists” to find more relevant businesses.</p></div></div>
+                    </section>
+                </div>
+                <footer class="page-footer"><span>Google Maps Scraper</span><span>Built for focused discovery.</span></footer>
             </div>
         </main>
     </div>
-
+    <div id="toast" class="toast" role="status" hidden></div>
     <div id="map-modal-container"></div>
-<script>
-function hideSponsor() {
-    const sponsorSection = document.getElementById('sponsor-section');
-    if (sponsorSection) {
-        sponsorSection.style.display = 'none';
-    }
-}
-</script>
+    <noscript><div class="noscript-message">Enable JavaScript to create searches and receive status updates.</div></noscript>
 </body>
 </html>

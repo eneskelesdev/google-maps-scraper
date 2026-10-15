@@ -69,6 +69,24 @@ func (s *Service) ListJobs(ctx context.Context, page, limit int) (JobPage, error
 		return ans, err
 	}
 
+	var summary JobSummary
+	for _, item := range []struct {
+		status string
+		count  *int
+	}{
+		{StatusWorking, &summary.Working},
+		{StatusPending, &summary.Pending},
+		{StatusOK, &summary.Completed},
+		{StatusFailed, &summary.Failed},
+	} {
+		count, err := s.countJobs(ctx, SelectParams{Status: item.status})
+		if err != nil {
+			return ans, fmt.Errorf("count %s jobs: %w", item.status, err)
+		}
+
+		*item.count = count
+	}
+
 	ans = JobPage{
 		Jobs:        jobs,
 		CurrentPage: page,
@@ -79,6 +97,7 @@ func (s *Service) ListJobs(ctx context.Context, page, limit int) (JobPage, error
 		PrevPage:    page - 1,
 		NextPage:    page + 1,
 		HasPages:    totalPages > 1,
+		Summary:     summary,
 	}
 
 	return ans, nil

@@ -163,8 +163,8 @@ func TestGetJobsHTMXTriggerIsPollingOnly(t *testing.T) {
 		t.Fatal("job_rows.html must not use hx-trigger=\"load\" — it causes an HTMX outerHTML reload loop")
 	}
 
-	if !strings.Contains(body, `hx-trigger="every 10s"`) {
-		t.Fatal("job_rows.html must use hx-trigger=\"every 10s\" for periodic polling")
+	if !strings.Contains(body, `hx-trigger="every 3s"`) {
+		t.Fatal("job_rows.html must use hx-trigger=\"every 3s\" for periodic polling")
 	}
 
 	if !strings.Contains(body, `hx-delete="/delete?id=00000000-0000-0000-0000-000000000001&page=1"`) {
@@ -261,5 +261,34 @@ func TestDeleteRendersClampedCurrentPage(t *testing.T) {
 
 	if rows := strings.Count(body, "<tr>"); rows != 20 {
 		t.Fatalf("got %d rows, want 20", rows)
+	}
+}
+
+func TestJobActivityFollowsServerStatus(t *testing.T) {
+	repo := &mutableJobRepo{mockJobRepo: mockJobRepo{jobs: paginatedJobs(1)}}
+	srv := newTestServerWithRepo(t, repo)
+	for _, state := range []struct {
+		status    string
+		message   string
+		animation bool
+	}{
+		{StatusPending, "Your search is in the queue", false},
+		{StatusWorking, "Discovery in progress", true},
+		{StatusOK, "You're all caught up", false},
+		{StatusFailed, "No searches running", false},
+	} {
+		repo.jobs[0].Status = state.status
+		rec := httptest.NewRecorder()
+		srv.getJobs(rec, httptest.NewRequest(http.MethodGet, "/jobs", http.NoBody))
+		body := rec.Body.String()
+		if rec.Code != http.StatusOK || !strings.Contains(body, state.message) {
+			t.Fatalf("%s: unexpected activity: %s", state.status, body)
+		}
+		if got := strings.Contains(body, `class="radar-ring"`); got != state.animation {
+			t.Fatalf("%s: activity animation = %v, want %v", state.status, got, state.animation)
+		}
+		if got := strings.Contains(body, "download class="); got != (state.status == StatusOK) {
+			t.Fatalf("%s: download availability = %v", state.status, got)
+		}
 	}
 }

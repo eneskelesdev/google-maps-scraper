@@ -32,6 +32,15 @@ type JobPage struct {
 	PrevPage    int
 	NextPage    int
 	HasPages    bool
+	Summary     JobSummary
+}
+
+// JobSummary describes activity across all pages of the workspace.
+type JobSummary struct {
+	Working   int
+	Pending   int
+	Completed int
+	Failed    int
 }
 
 type JobRepository interface {

@@ -308,3 +308,25 @@ func TestListJobsSupportsLegacyRepositoryWithoutCount(t *testing.T) {
 		t.Fatalf("unexpected page: %+v", page)
 	}
 }
+
+func TestListJobsSummaryIncludesOtherPages(t *testing.T) {
+	jobs := paginatedJobs(24)
+	for i := range jobs {
+		jobs[i].Status = StatusOK
+	}
+	jobs[21].Status = StatusWorking
+	jobs[22].Status = StatusPending
+	jobs[23].Status = StatusFailed
+	svc := NewService(&mockJobRepo{jobs: jobs}, t.TempDir())
+	page, err := svc.ListJobs(context.Background(), 1, 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := JobSummary{Working: 1, Pending: 1, Completed: 21, Failed: 1}
+	if page.Summary != want {
+		t.Fatalf("summary = %+v, want %+v", page.Summary, want)
+	}
+	if len(page.Jobs) != 20 || page.Total != 24 {
+		t.Fatalf("pagination changed: %+v", page)
+	}
+}

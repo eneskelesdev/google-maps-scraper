@@ -24,6 +24,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const failureStatusUpdateTimeout = 5 * time.Second
+
 type webrunner struct {
 	srv       *web.Server
 	svc       *web.Service
@@ -137,7 +139,7 @@ func (w *webrunner) work(ctx context.Context) error {
 	}
 }
 
-func (w *webrunner) scrapeJob(ctx context.Context, job *web.Job) error {
+func (w *webrunner) scrapeJob(ctx context.Context, job *web.Job) (scrapeErr error) {
 	job.Status = web.StatusWorking
 
 	err := w.svc.Update(ctx, job)
@@ -145,10 +147,23 @@ func (w *webrunner) scrapeJob(ctx context.Context, job *web.Job) error {
 		return err
 	}
 
-	if len(job.Data.Keywords) == 0 {
-		job.Status = web.StatusFailed
+	// Every error after starting must leave a terminal state for the web UI.
+	defer func() {
+		if scrapeErr == nil {
+			return
+		}
 
-		return w.svc.Update(ctx, job)
+		job.Status = web.StatusFailed
+		statusCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), failureStatusUpdateTimeout)
+		defer cancel()
+
+		if err := w.svc.Update(statusCtx, job); err != nil {
+			log.Printf("failed to update job status: %v", err)
+		}
+	}()
+
+	if len(job.Data.Keywords) == 0 {
+		return errors.New("missing keywords")
 	}
 
 	outpath := filepath.Join(w.cfg.DataFolder, job.ID+".csv")
@@ -169,13 +184,6 @@ func (w *webrunner) scrapeJob(ctx context.Context, job *web.Job) error {
 
 	mate, err := setupMate(ctx, outfile, job)
 	if err != nil {
-		job.Status = web.StatusFailed
-
-		err2 := w.svc.Update(ctx, job)
-		if err2 != nil {
-			log.Printf("failed to update job status: %v", err2)
-		}
-
 		return err
 	}
 
@@ -209,11 +217,6 @@ func (w *webrunner) scrapeJob(ctx context.Context, job *web.Job) error {
 		w.cfg.ExtraReviews || job.Data.ExtraReviews,
 	)
 	if err != nil {
-		err2 := w.svc.Update(ctx, job)
-		if err2 != nil {
-			log.Printf("failed to update job status: %v", err2)
-		}
-
 		return err
 	}
 
@@ -242,11 +245,6 @@ func (w *webrunner) scrapeJob(ctx context.Context, job *web.Job) error {
 		err = mate.Start(mateCtx, seedJobs...)
 		if err != nil && !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
 			cancel()
-
-			err2 := w.svc.Update(ctx, job)
-			if err2 != nil {
-				log.Printf("failed to update job status: %v", err2)
-			}
 
 			return err
 		}
