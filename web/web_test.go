@@ -9,9 +9,39 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
+
+func TestIndexUsesVersionedStaticAssets(t *testing.T) {
+	srv := newTestServer(t, t.TempDir())
+	rec := httptest.NewRecorder()
+	srv.srv.Handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", http.NoBody))
+
+	for _, asset := range []struct {
+		path        string
+		contentType string
+	}{
+		{"/static/css/main.css", "text/css"},
+		{"/static/js/app.js", "javascript"},
+	} {
+		pattern := regexp.MustCompile(regexp.QuoteMeta(asset.path) + `\?v=[a-f0-9]+`)
+		assetURL := pattern.FindString(rec.Body.String())
+		if assetURL == "" {
+			t.Fatalf("index is missing a versioned URL for %s", asset.path)
+		}
+
+		response := httptest.NewRecorder()
+		srv.srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, assetURL, http.NoBody))
+		if response.Code != http.StatusOK || response.Body.Len() == 0 {
+			t.Fatalf("versioned asset %s is not served: status %d", assetURL, response.Code)
+		}
+		if !strings.Contains(response.Header().Get("Content-Type"), asset.contentType) {
+			t.Fatalf("unexpected content type for %s: %s", assetURL, response.Header().Get("Content-Type"))
+		}
+	}
+}
 
 type mutableJobRepo struct {
 	mockJobRepo

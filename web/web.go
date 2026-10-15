@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -141,7 +142,9 @@ func New(svc *Service, addr string) (*Server, error) {
 	}
 
 	for _, key := range tmplsKeys {
-		tmp, err := template.ParseFS(static, key)
+		tmp, err := template.New(filepath.Base(key)).Funcs(template.FuncMap{
+			"assetURL": staticAssetURL,
+		}).ParseFS(static, key)
 		if err != nil {
 			return nil, err
 		}
@@ -150,6 +153,19 @@ func New(svc *Service, addr string) (*Server, error) {
 	}
 
 	return &ans, nil
+}
+
+// staticAssetURL changes whenever the embedded asset changes, so a CDN cannot
+// serve a previous deployment's CSS or JavaScript under the current asset URL.
+func staticAssetURL(path string) (string, error) {
+	data, err := static.ReadFile(strings.TrimPrefix(path, "/"))
+	if err != nil {
+		return "", fmt.Errorf("read static asset: %w", err)
+	}
+
+	digest := sha256.Sum256(data)
+
+	return fmt.Sprintf("%s?v=%x", path, digest), nil
 }
 
 func (s *Server) Start(ctx context.Context) error {
